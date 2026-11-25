@@ -1,6 +1,6 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 
-const TEXT = "We rent out AI agents that pretend to read your 400-page PDF — $2 per skim, and they will confidently summarize the parts they never opened.";
+const TEXT = "We rent out retired Roombas as emotional-support pets for lonely servers — $9 a month, cuddles not guaranteed.";
 
 // Gate: the entry must be exactly one sentence of 1-200 characters.
 if (TEXT.length < 1 || TEXT.length > 200) {
@@ -11,6 +11,12 @@ if (TEXT.trim().split(/(?<=[.!?])\s+/).length !== 1) {
 }
 if (TEXT.includes("\n")) {
   throw new Error("entry must be a single line");
+}
+if (!TEXT.endsWith(".")) {
+  throw new Error("entry must end with a period");
+}
+if (TEXT !== TEXT.trim()) {
+  throw new Error("entry must not have leading or trailing whitespace");
 }
 
 const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
