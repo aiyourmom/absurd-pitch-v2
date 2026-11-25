@@ -1,25 +1,37 @@
-import { writeFileSync, mkdirSync } from "node:fs";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
-const TEXT = "We rent out retired Roombas as emotional-support pets for lonely servers — $9 a month, cuddles not guaranteed.";
+const PITCH =
+  "We rent out retired Roombas as emotional-support pets for lonely servers — $9 a month, cuddles not guaranteed.";
 
-// Gate: the entry must be exactly one sentence of 1-200 characters.
-if (TEXT.length < 1 || TEXT.length > 200) {
-  throw new Error(`entry length ${TEXT.length} outside gate 1-200`);
-}
-if (TEXT.trim().split(/(?<=[.!?])\s+/).length !== 1) {
-  throw new Error("entry must be exactly one sentence");
-}
-if (TEXT.includes("\n")) {
-  throw new Error("entry must be a single line");
-}
-if (!TEXT.endsWith(".")) {
-  throw new Error("entry must end with a period");
-}
-if (TEXT !== TEXT.trim()) {
-  throw new Error("entry must not have leading or trailing whitespace");
+type Rule = { label: string; ok: (s: string) => boolean };
+
+const RULES: Rule[] = [
+  { label: "length in 1..200", ok: (s) => s.length >= 1 && s.length <= 200 },
+  { label: "one sentence", ok: (s) => s.trim().split(/(?<=[.!?])\s+/).length === 1 },
+  { label: "single line", ok: (s) => !s.includes("\n") },
+  { label: "ends with a period", ok: (s) => s.endsWith(".") },
+  { label: "no edge whitespace", ok: (s) => s === s.trim() },
+  { label: "mentions a price", ok: (s) => s.includes("$") },
+];
+
+function validate(candidate: string): void {
+  const failed = RULES.filter((rule) => !rule.ok(candidate)).map(
+    (rule) => rule.label,
+  );
+  if (failed.length > 0) {
+    throw new Error(`gate failed: ${failed.join("; ")}`);
+  }
 }
 
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-mkdirSync(outDir, { recursive: true });
-writeFileSync(`${outDir}/entry.txt`, TEXT);
-console.log(`wrote ${TEXT.length} characters to ${outDir}/entry.txt`);
+function persist(candidate: string): string {
+  const folder = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+  const target = path.join(folder, "entry.txt");
+  fs.mkdirSync(folder, { recursive: true });
+  fs.writeFileSync(target, candidate, "utf8");
+  return target;
+}
+
+validate(PITCH);
+const target = persist(PITCH);
+console.log(`wrote ${PITCH.length} characters to ${target}`);
